@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## Foundry
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
@@ -64,3 +65,7 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
+=======
+# automated-market-maker
+This project is a demonstration of a Decentralized Exchange (DEX) built to showcase my expertise in developing secure, efficient, and well-structured smart contracts. It serves as a proof of concept highlighting my skills in blockchain development, decentralized finance (DeFi) mechanisms, and smart contract optimization.
+>>>>>>> ad939192f0273b7aab041f4d9c335baa75f688a2
