@@ -4,6 +4,7 @@ This project is a demonstration of a Decentralized Exchange (DEX) built to showc
 These are the addresses of the contracts deployed on the Sepolia test network:
 
 PoolRouter: 0x5FA42dFB2139F7461745a374fe76a7FeD53B1C4A
+
 PoolFactory: 0xe82e77f6a81E5B0cC791bca298AbAEf60ad83a88
 
 
