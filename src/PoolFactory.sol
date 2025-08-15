@@ -2,62 +2,56 @@
 pragma solidity 0.8.20;
 
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {OnChainWhitelist} from './utils/OnChainWhitelist.sol';
-import {LiquidityPool} from './LiquidityPool.sol';
+import {OnChainWhitelist} from "./utils/OnChainWhitelist.sol";
+import {LiquidityPool} from "./LiquidityPool.sol";
 
 contract PoolFactory is Pausable, OnChainWhitelist {
     address[] public allPools;
-    
     mapping(address => mapping(address => address)) public getPoolAddress;
-    
-    event LogCreatePool(address _token0, address _token1, address _sender, uint _pairsLength);
 
-    constructor(address initialOwner) OnChainWhitelist(initialOwner) {}
+    event LogCreatePool(address indexed token0, address indexed token1, address sender, uint pairsLength);
 
-    function allPoolsLength() 
-        external 
-        view 
-        returns (uint) 
-    {
+    constructor() OnChainWhitelist(msg.sender) {
+        whitelist[msg.sender] = true;
+    }
+
+    function allPoolsLength() external view returns (uint) {
         return allPools.length;
     }
 
-    function createPool(address _token0, address _token1, uint _fees)
+    function createPool(address token0, address token1, uint fees)
         external
         whenNotPaused
-        returns (address poolAddress) 
+        returns (address poolAddress)
     {
         require(whitelist[msg.sender] || msg.sender == owner(), "not authorized!");
-        require(_token0 != _token1, "identical addresses not allowed!");
-        require(_token0 != address(0) && _token1 != address(0), "zero address is not allowed!");
-        require(getPoolAddress[_token0][_token1] == address(0), "token pair exists!");
-        
+        require(token0 != token1, "identical addresses not allowed!");
+        require(token0 != address(0) && token1 != address(0), "zero address not allowed!");
+        require(getPoolAddress[token0][token1] == address(0), "token pair exists!");
+        require(fees <= 2000, "fees exceed max");
+
+        // encode constructor args
         bytes memory bytecode = type(LiquidityPool).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(_token0, _token1));
-        
+        bytes memory constructorArgs = abi.encode(msg.sender, token0, token1, fees); // owner langsung = msg.sender
+        bytes memory finalBytecode = abi.encodePacked(bytecode, constructorArgs);
+
+        bytes32 salt = keccak256(abi.encodePacked(token0, token1));
+
         assembly {
-            poolAddress := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
+            poolAddress := create2(0, add(finalBytecode, 0x20), mload(finalBytecode), salt)
         }
-        
+
         require(poolAddress != address(0), "contract deployment failed!");
 
-        getPoolAddress[_token0][_token1] = poolAddress;
-        getPoolAddress[_token1][_token0] = poolAddress;
-
+        getPoolAddress[token0][token1] = poolAddress;
+        getPoolAddress[token1][token0] = poolAddress;
         allPools.push(poolAddress);
 
-        LiquidityPool(poolAddress).initPool(_token0, _token1, _fees);
-        LiquidityPool(poolAddress).transferOwnership(msg.sender);
-
-        emit LogCreatePool(_token0, _token1, msg.sender, allPools.length);
+        emit LogCreatePool(token0, token1, msg.sender, allPools.length);
     }
 
-    function poolExists(address _tokenA, address _tokenB)
-        external
-        view
-        returns (bool _exists)
-    {
-        _exists = getPoolAddress[_tokenA][_tokenB] != address(0);
+    function poolExists(address tokenA, address tokenB) external view returns (bool exists) {
+        exists = getPoolAddress[tokenA][tokenB] != address(0);
     }
 
     function pause() external onlyOwner {
