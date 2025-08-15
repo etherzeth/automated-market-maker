@@ -8,9 +8,7 @@ import "../src/PoolFactory.sol";
 import "../src/PoolRouter.sol";
 
 contract Token is ERC20 {
-    constructor(string memory name, string memory symbol, uint256 initialSupply)
-        ERC20(name, symbol)
-    {
+    constructor(string memory name, string memory symbol, uint256 initialSupply) ERC20(name, symbol) {
         _mint(msg.sender, initialSupply);
     }
 }
@@ -20,9 +18,9 @@ contract Deploy is Script {
         vm.startBroadcast();
 
         // Deploy tokens
-        Token dai  = new Token("DAI Token", "DAI", 1_000_000 ether);
+        Token dai = new Token("DAI Token", "DAI", 1_000_000 ether);
         Token twiz = new Token("TWIZ Token", "TWZ", 1_000_000 ether);
-        Token dwi  = new Token("DWI Token", "DWI", 1_000_000 ether);
+        Token dwi = new Token("DWI Token", "DWI", 1_000_000 ether);
 
         // Deploy WETH
         WETH9 weth = new WETH9();

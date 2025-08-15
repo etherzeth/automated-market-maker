@@ -14,43 +14,31 @@ contract LiquidityPool is TokenPool, ReentrancyGuard, Pausable {
     IERC20 public token0;
     IERC20 public token1;
 
-    uint public constant MAX_FEE_AMOUNT = 2000; // 2%
-    uint private constant FACTOR = 100000;
-    uint private reserve0;
-    uint private reserve1;
-    uint public fees;
-    uint private lastTimestamp;
+    uint256 public constant MAX_FEE_AMOUNT = 2000; // 2%
+    uint256 private constant FACTOR = 100000;
+    uint256 private reserve0;
+    uint256 private reserve1;
+    uint256 public fees;
+    uint256 private lastTimestamp;
     bool public initialized;
 
     modifier onlyPairTokens(address _tokenIn) {
-        require(
-            _tokenIn == address(token0) || _tokenIn == address(token1),
-            "token not supported!"
-        );
+        require(_tokenIn == address(token0) || _tokenIn == address(token1), "token not supported!");
         _;
     }
 
     event LogWithdrawIncorrectDeposit(address _tokenAddress, address _receiver);
 
-    constructor(
-    address initialOwner,
-    address _token0,
-    address _token1,
-    uint _fees
-    ) TokenPool(initialOwner) {
-    require(_token0 != address(0) && _token1 != address(0), "zero address not allowed!");
-    token0 = IERC20(_token0);
-    token1 = IERC20(_token1);
-    require(_fees <= MAX_FEE_AMOUNT, "fees exceed limit!");
-    fees = _fees;
-    initialized = true;
+    constructor(address initialOwner, address _token0, address _token1, uint256 _fees) TokenPool(initialOwner) {
+        require(_token0 != address(0) && _token1 != address(0), "zero address not allowed!");
+        token0 = IERC20(_token0);
+        token1 = IERC20(_token1);
+        require(_fees <= MAX_FEE_AMOUNT, "fees exceed limit!");
+        fees = _fees;
+        initialized = true;
     }
 
-
-    function initPool(address _token0, address _token1, uint _fees)
-        external
-        onlyOwner
-    {
+    function initPool(address _token0, address _token1, uint256 _fees) external onlyOwner {
         require(!initialized, "already initialized");
         require(_token0 != address(0) && _token1 != address(0), "zero address not allowed");
         require(_fees <= MAX_FEE_AMOUNT, "fees exceed limit");
@@ -61,86 +49,76 @@ contract LiquidityPool is TokenPool, ReentrancyGuard, Pausable {
         initialized = true;
     }
 
-    function getLatestReserves() 
-        public 
-        view 
-        returns (uint _reserve0, uint _reserve1, uint _lastTimestamp) 
-    {
+    function getLatestReserves() public view returns (uint256 _reserve0, uint256 _reserve1, uint256 _lastTimestamp) {
         _reserve0 = reserve0;
         _reserve1 = reserve1;
         _lastTimestamp = lastTimestamp;
     }
 
-    function setPoolFees(uint _newFees) external onlyOwner {
+    function setPoolFees(uint256 _newFees) external onlyOwner {
         require(_newFees != fees, "fees should be different!");
         require(_newFees <= MAX_FEE_AMOUNT, "fees exceed limit!");
         fees = _newFees;
     }
 
-    function _updateReserves(uint _reserve0, uint _reserve1) private {
+    function _updateReserves(uint256 _reserve0, uint256 _reserve1) private {
         reserve0 = _reserve0;
         reserve1 = _reserve1;
         lastTimestamp = block.timestamp;
     }
 
-    function swapTokens(uint _amountOut, address _to, address _tokenIn)
-        whenNotPaused
-        nonReentrant
-        external
-    {
+    function swapTokens(uint256 _amountOut, address _to, address _tokenIn) external whenNotPaused nonReentrant {
         require(_amountOut > 0, "amountOut should be > 0");
 
-        (IERC20 tokenIn, IERC20 tokenOut, uint reserveIn, uint reserveOut) = getReserves(_tokenIn);
+        (IERC20 tokenIn, IERC20 tokenOut, uint256 reserveIn, uint256 reserveOut) = getReserves(_tokenIn);
         require(_amountOut < reserveOut, "not enough reserveOut");
 
         IERC20(tokenOut).safeTransfer(_to, _amountOut);
 
-        uint balance0 = tokenIn.balanceOf(address(this));
-        uint balance1 = tokenOut.balanceOf(address(this));
+        uint256 balance0 = tokenIn.balanceOf(address(this));
+        uint256 balance1 = tokenOut.balanceOf(address(this));
 
-        (uint newReserve0, uint newReserve1) = _tokenIn == address(token0)
-            ? (balance0, balance1)
-            : (balance1, balance0);
+        (uint256 newReserve0, uint256 newReserve1) =
+            _tokenIn == address(token0) ? (balance0, balance1) : (balance1, balance0);
 
         _updateReserves(newReserve0, newReserve1);
 
         require(newReserve0 * newReserve1 >= reserveIn * reserveOut, "swap failed");
     }
 
-    function getReserves(address _tokenIn) 
+    function getReserves(address _tokenIn)
         public
         view
-        returns (IERC20 tokenIn, IERC20 tokenOut, uint reserveIn, uint reserveOut) 
+        returns (IERC20 tokenIn, IERC20 tokenOut, uint256 reserveIn, uint256 reserveOut)
     {
         bool isToken0 = _tokenIn == address(token0);
-        (tokenIn, tokenOut, reserveIn, reserveOut) = isToken0
-            ? (token0, token1, reserve0, reserve1)
-            : (token1, token0, reserve1, reserve0);
+        (tokenIn, tokenOut, reserveIn, reserveOut) =
+            isToken0 ? (token0, token1, reserve0, reserve1) : (token1, token0, reserve1, reserve0);
     }
 
-    function getAmountOut(address _tokenIn, uint _amountIn)
+    function getAmountOut(address _tokenIn, uint256 _amountIn)
         external
         view
         onlyPairTokens(_tokenIn)
-        returns (uint amountOut)
+        returns (uint256 amountOut)
     {
-        (,, uint reserveIn, uint reserveOut) = getReserves(_tokenIn);
-        uint amountInWithFee = (_amountIn * (FACTOR - fees)) / FACTOR;
+        (,, uint256 reserveIn, uint256 reserveOut) = getReserves(_tokenIn);
+        uint256 amountInWithFee = (_amountIn * (FACTOR - fees)) / FACTOR;
         amountOut = (reserveOut * amountInWithFee) / (reserveIn + amountInWithFee);
     }
 
-    function addLiquidity(address _to) external whenNotPaused returns (uint shares) {
-        (uint _reserve0, uint _reserve1,) = getLatestReserves();
+    function addLiquidity(address _to) external whenNotPaused returns (uint256 shares) {
+        (uint256 _reserve0, uint256 _reserve1,) = getLatestReserves();
 
-        uint _balance0 = token0.balanceOf(address(this));
-        uint _balance1 = token1.balanceOf(address(this));
+        uint256 _balance0 = token0.balanceOf(address(this));
+        uint256 _balance1 = token1.balanceOf(address(this));
 
-        uint _amount0 = _balance0 - _reserve0;
-        uint _amount1 = _balance1 - _reserve1;
+        uint256 _amount0 = _balance0 - _reserve0;
+        uint256 _amount1 = _balance1 - _reserve1;
 
         require(_amount0 != 0 && _amount1 != 0, "liquidity = 0");
 
-        uint _totalSupply = totalSupply();
+        uint256 _totalSupply = totalSupply();
         shares = _totalSupply == 0
             ? Math.sqrt(_amount0 * _amount1)
             : Math.min((_amount0 * _totalSupply) / _reserve0, (_amount1 * _totalSupply) / _reserve1);
@@ -151,16 +129,12 @@ contract LiquidityPool is TokenPool, ReentrancyGuard, Pausable {
         _updateReserves(token0.balanceOf(address(this)), token1.balanceOf(address(this)));
     }
 
-    function removeLiquidity(address _to)
-        external
-        nonReentrant
-        returns (uint amount0, uint amount1)
-    {
-        uint balance0 = token0.balanceOf(address(this));
-        uint balance1 = token1.balanceOf(address(this));
+    function removeLiquidity(address _to) external nonReentrant returns (uint256 amount0, uint256 amount1) {
+        uint256 balance0 = token0.balanceOf(address(this));
+        uint256 balance1 = token1.balanceOf(address(this));
 
-        uint shares = balanceOf(address(this));
-        uint _totalSupply = totalSupply();
+        uint256 shares = balanceOf(address(this));
+        uint256 _totalSupply = totalSupply();
 
         amount0 = (shares * balance0) / _totalSupply;
         amount1 = (shares * balance1) / _totalSupply;
@@ -174,13 +148,9 @@ contract LiquidityPool is TokenPool, ReentrancyGuard, Pausable {
         token1.safeTransfer(_to, amount1);
     }
 
-    function withdrawIncorrectDeposit(IERC20 _token, address _receiver)
-        external
-        onlyOwner
-        nonReentrant
-    {
+    function withdrawIncorrectDeposit(IERC20 _token, address _receiver) external onlyOwner nonReentrant {
         require(_token != token0 && _token != token1, "token in pool");
-        uint balance = _token.balanceOf(address(this));
+        uint256 balance = _token.balanceOf(address(this));
         _token.safeTransfer(_receiver, balance);
         emit LogWithdrawIncorrectDeposit(address(_token), _receiver);
     }

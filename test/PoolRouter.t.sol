@@ -22,11 +22,11 @@ contract TestPoolRouter is Test {
     address trader1;
     address trader2;
 
-    uint constant ZERO = 0;
-    uint constant ONE = 1e18;
-    uint constant FIVE = 5e18;
-    uint constant TEN = 10e18;
-    uint constant FEES = 2000;
+    uint256 constant ZERO = 0;
+    uint256 constant ONE = 1e18;
+    uint256 constant FIVE = 5e18;
+    uint256 constant TEN = 10e18;
+    uint256 constant FEES = 2000;
 
     function setUp() public {
         owner = address(this);
@@ -67,7 +67,7 @@ contract TestPoolRouter is Test {
         return LiquidityPool(poolAddr);
     }
 
-    function addLiquidity(address _supplier, uint amountA, uint amountB) internal {
+    function addLiquidity(address _supplier, uint256 amountA, uint256 amountB) internal {
         vm.startPrank(_supplier);
         router.addTokenToTokenLiquidity(address(uni), address(dai), amountA, amountB, ZERO, ZERO);
         vm.stopPrank();
@@ -75,8 +75,8 @@ contract TestPoolRouter is Test {
 
     function approveRouter(address user) internal {
         vm.startPrank(user);
-        uni.approve(address(router), type(uint).max);
-        dai.approve(address(router), type(uint).max);
+        uni.approve(address(router), type(uint256).max);
+        dai.approve(address(router), type(uint256).max);
         vm.stopPrank();
     }
 
@@ -84,7 +84,7 @@ contract TestPoolRouter is Test {
         pool = deployPool();
         addLiquidity(supplier1, FIVE, TEN);
 
-        (uint reserve0, uint reserve1,) = pool.getLatestReserves();
+        (uint256 reserve0, uint256 reserve1,) = pool.getLatestReserves();
         assertEq(reserve0, FIVE);
         assertEq(reserve1, TEN);
     }
@@ -92,16 +92,15 @@ contract TestPoolRouter is Test {
     function testSwapTokens() public {
         pool = deployPool();
         addLiquidity(supplier1, FIVE, TEN);
-    
+
         vm.startPrank(trader1);
-        uint amountOut = router.getPoolAmountOut(address(uni), address(dai), ONE);
+        uint256 amountOut = router.getPoolAmountOut(address(uni), address(dai), ONE);
         router.swapTokenToToken(address(uni), address(dai), ONE, ZERO);
-        uint daiBal = dai.balanceOf(trader1);
+        uint256 daiBal = dai.balanceOf(trader1);
         vm.stopPrank();
 
         assertApproxEqAbs(daiBal, amountOut, 1e19);
     }
-
 
     function testSwapETHForToken() public {
         factory.createPool(address(weth), address(dai), FEES);
@@ -113,15 +112,13 @@ contract TestPoolRouter is Test {
 
         vm.deal(trader1, ONE);
         vm.startPrank(trader1);
-        uint balanceBefore = dai.balanceOf(trader1);
+        uint256 balanceBefore = dai.balanceOf(trader1);
         router.swapETHForTokens{value: ONE}(address(dai), ZERO);
-        uint balanceAfter = dai.balanceOf(trader1);
+        uint256 balanceAfter = dai.balanceOf(trader1);
         vm.stopPrank();
 
         assertApproxEqAbs(balanceAfter - balanceBefore, router.getPoolAmountOut(address(weth), address(dai), ONE), 1e17);
     }
-
-
 
     function testSwapTokenForETH() public {
         factory.createPool(address(weth), address(dai), FEES);
@@ -134,7 +131,7 @@ contract TestPoolRouter is Test {
         approveRouter(trader1);
 
         vm.startPrank(trader1);
-        uint amountOut = router.getPoolAmountOut(address(dai), address(weth), FIVE);
+        uint256 amountOut = router.getPoolAmountOut(address(dai), address(weth), FIVE);
         router.swapTokensForETH(address(dai), FIVE, amountOut);
         vm.stopPrank();
 

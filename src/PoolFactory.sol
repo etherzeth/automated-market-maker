@@ -9,17 +9,17 @@ contract PoolFactory is Pausable, OnChainWhitelist {
     address[] public allPools;
     mapping(address => mapping(address => address)) public getPoolAddress;
 
-    event LogCreatePool(address indexed token0, address indexed token1, address sender, uint pairsLength);
+    event LogCreatePool(address indexed token0, address indexed token1, address sender, uint256 pairsLength);
 
     constructor() OnChainWhitelist(msg.sender) {
         whitelist[msg.sender] = true;
     }
 
-    function allPoolsLength() external view returns (uint) {
+    function allPoolsLength() external view returns (uint256) {
         return allPools.length;
     }
 
-    function createPool(address token0, address token1, uint fees)
+    function createPool(address token0, address token1, uint256 fees)
         external
         whenNotPaused
         returns (address poolAddress)

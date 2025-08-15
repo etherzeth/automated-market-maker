@@ -16,7 +16,7 @@ contract LiquidityPoolFoundryTest is Test {
     address trader1;
     address notOwner;
 
-    uint256 constant FEES = 2000;        // 2%
+    uint256 constant FEES = 2000; // 2%
     uint256 constant INITIAL_TOKENS = 100 ether;
     uint256 constant TEN = 10 ether;
     uint256 constant FIVE = 5 ether;
@@ -26,8 +26,8 @@ contract LiquidityPoolFoundryTest is Test {
         // setup accounts
         owner = address(this);
         supplier1 = vm.addr(1);
-        trader1   = vm.addr(2);
-        notOwner  = vm.addr(3);
+        trader1 = vm.addr(2);
+        notOwner = vm.addr(3);
 
         // deploy tokens
         dai = new Token("DAI Token", "DAI", owner);
@@ -73,24 +73,19 @@ contract LiquidityPoolFoundryTest is Test {
 
     function testOnlyOwnerSetFees() public {
         vm.prank(notOwner);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Ownable.OwnableUnauthorizedAccount.selector,
-                notOwner
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notOwner));
         pool.setPoolFees(500);
     }
 
     function testSetFeesByOwner() public {
-        uint newFees = 1000;
+        uint256 newFees = 1000;
         pool.setPoolFees(newFees);
         assertEq(pool.fees(), newFees);
     }
 
     function testAddLiquidity() public {
         vm.prank(supplier1);
-        uint shares = pool.addLiquidity(supplier1);
+        uint256 shares = pool.addLiquidity(supplier1);
         assertGt(shares, 0);
     }
 
@@ -98,10 +93,10 @@ contract LiquidityPoolFoundryTest is Test {
         vm.prank(supplier1);
         pool.addLiquidity(supplier1);
 
-        uint traderUniBefore = uni.balanceOf(trader1);
-        uint traderDaiBefore = dai.balanceOf(trader1);
+        uint256 traderUniBefore = uni.balanceOf(trader1);
+        uint256 traderDaiBefore = dai.balanceOf(trader1);
 
-        uint amountIn = ONE;
+        uint256 amountIn = ONE;
 
         vm.prank(trader1);
         uni.transfer(address(pool), amountIn);
@@ -109,19 +104,18 @@ contract LiquidityPoolFoundryTest is Test {
         vm.prank(trader1);
         pool.swapTokens(pool.getAmountOut(address(uni), amountIn), trader1, address(uni));
 
-        uint traderUniAfter = uni.balanceOf(trader1);
-        uint traderDaiAfter = dai.balanceOf(trader1);
+        uint256 traderUniAfter = uni.balanceOf(trader1);
+        uint256 traderDaiAfter = dai.balanceOf(trader1);
 
         assertApproxEqRel(traderUniAfter, traderUniBefore - amountIn, 1e16);
         assertGt(traderDaiAfter, traderDaiBefore);
     }
 
-
     function testRemoveLiquidity() public {
         vm.prank(supplier1);
         pool.addLiquidity(supplier1);
 
-        uint shares = pool.balanceOf(supplier1);
+        uint256 shares = pool.balanceOf(supplier1);
 
         vm.prank(supplier1);
         pool.approve(supplier1, shares);

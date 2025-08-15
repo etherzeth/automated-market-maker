@@ -14,7 +14,7 @@ contract TestPoolFactory is Test {
     address owner;
     address notOwner;
 
-    uint256 constant FEES = 2000;        // 2%
+    uint256 constant FEES = 2000; // 2%
 
     function setUp() public {
         owner = address(this);
@@ -46,7 +46,6 @@ contract TestPoolFactory is Test {
         vm.expectRevert(bytes("not authorized!"));
         factory.createPool(address(dai), address(uni), FEES);
     }
-
 
     function testCannotCreatePoolWithZeroAddress() public {
         vm.expectRevert(bytes("zero address not allowed!"));
